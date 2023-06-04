@@ -17,7 +17,7 @@ if __name__ == '__main__':
         args['image_directory'] += '/'
 
     files = [file for file in os.listdir(args["image_directory"]) if re.match(
-        ".*\.(?:jpg|jpeg|png)", file)]
+        ".*\.(?:jpg|jpeg|png|webp)", file)]
 
     if (args['max_megapixels']):
         for file in files:
@@ -25,6 +25,7 @@ if __name__ == '__main__':
             width, height = img.size
             area = width * height / 1_000_000  # in megapixels
             if area > args['max_megapixels']:
+                print(f"Working on {file}...")
                 factor = math.sqrt(args['max_megapixels'] / area)
                 new_width = math.floor(width * factor)
                 new_height = math.floor(height * factor)

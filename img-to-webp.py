@@ -4,12 +4,12 @@ import argparse
 from PIL import Image
 
 
-def converter(image_name, min_size):
+def converter(image_name, min_size, quality):
     if min_size is None or os.path.getsize(image_name) > min_size * 1024:
         print(f"Working on {image_name}...")
         img = Image.open(image_name).convert('RGB')
         img.save(os.path.splitext(image_name)[
-            0] + '.webp', 'webp', optimize=True, quality=80)
+            0] + '.webp', 'webp', optimize=True, quality=quality)
         if args["remove_originals"]:
             os.remove(image_name)
 
@@ -25,12 +25,14 @@ if __name__ == '__main__':
                         type=bool, default=False)
     parser.add_argument('--min_size', '-m',
                         type=int, default=None)  # in kBs
+    parser.add_argument('--quality', '-q',
+                        type=int, default=80)
 
     args = vars(parser.parse_args())
 
     if args["image_name"]:
         if os.path.isfile(args["image_name"]):
-            converter(args["image_name"], args["min_size"])
+            converter(args["image_name"], args["min_size"], args["quality"])
         else:
             print("Image path does not exist!")
     else:
@@ -41,4 +43,5 @@ if __name__ == '__main__':
             ".*\.(?:jpg|jpeg|png|webp)", file)]
 
         for file in files:
-            converter(args["image_directory"] + file, args["min_size"])
+            converter(args["image_directory"] + file,
+                      args["min_size"], args["quality"])

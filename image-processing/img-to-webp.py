@@ -4,17 +4,7 @@ import argparse
 from PIL import Image
 
 
-def converter(image_name, min_size, quality):
-    if min_size is None or os.path.getsize(image_name) > min_size * 1024:
-        print(f"Working on {image_name}...")
-        img = Image.open(image_name).convert('RGB')
-        img.save(os.path.splitext(image_name)[
-            0] + '.webp', 'webp', optimize=True, quality=quality)
-        if args["remove_originals"]:
-            os.remove(image_name)
-
-
-if __name__ == '__main__':
+def parse_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--image_directory', '-d',
@@ -28,7 +18,21 @@ if __name__ == '__main__':
     parser.add_argument('--quality', '-q',
                         type=int, default=80)
 
-    args = vars(parser.parse_args())
+    return vars(parser.parse_args())
+
+
+def converter(image_name, min_size, quality):
+    if min_size is None or os.path.getsize(image_name) > min_size * 1024:
+        print(f"Working on {image_name}...")
+        img = Image.open(image_name).convert('RGB')
+        img.save(os.path.splitext(image_name)[
+            0] + '.webp', 'webp', optimize=True, quality=quality)
+        if args["remove_originals"]:
+            os.remove(image_name)
+
+
+if __name__ == '__main__':
+    args = parse_args()
 
     if args["image_name"]:
         if os.path.isfile(args["image_name"]):
@@ -36,12 +40,12 @@ if __name__ == '__main__':
         else:
             print("Image path does not exist!")
     else:
-        if args["image_directory"][-1] != "/":
-            args["image_directory"] += '/'
+        if os.path.isdir(args["image_directory"]):
+            files = [file for file in os.listdir(args["image_directory"]) if re.match(
+                ".*\.(?:jpg|jpeg|png|webp)", file)]
 
-        files = [file for file in os.listdir(args["image_directory"]) if re.match(
-            ".*\.(?:jpg|jpeg|png|webp)", file)]
-
-        for file in files:
-            converter(args["image_directory"] + file,
-                      args["min_size"], args["quality"])
+            for file in files:
+                converter(os.path.join(args["image_directory"], file),
+                          args["min_size"], args["quality"])
+        else:
+            print("Directory does not exist!")

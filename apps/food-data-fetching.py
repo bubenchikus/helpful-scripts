@@ -33,7 +33,7 @@ def get_all_data_by_type(type, collection):
     page_number = 1
     while True:  # do-while emulation
         res = get_pages_by_type(type, page_number)
-        if len(res) < 1 or page_number > 1:
+        if len(res) < 1:
             break
         for product in res:
             product = trim_useless_fields(product)

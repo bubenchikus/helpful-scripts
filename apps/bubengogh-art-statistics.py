@@ -6,8 +6,42 @@ import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FuncFormatter
 
-if __name__ == '__main__':
 
+def date_generator(month, year):
+    return matplotlib.dates.date2num(datetime.strptime(f'{month}/{year}', '%m/%Y').date())
+
+
+def insert_created(created, categories, current_category):
+    if created in categories['all']['x']:
+        categories['all']['y'][categories['all']
+                               ['x'].index(created)] += 1
+    else:
+        categories['all']['x'].append(created)
+        categories['all']['y'].append(1)
+
+    if current_category not in categories:
+        categories[current_category] = {'x': [created], 'y': [1]}
+    else:
+        if created in categories[current_category]['x']:
+            categories[current_category]['y'][categories[current_category]['x'].index(
+                created)] += 1
+        else:
+            categories[current_category]['x'].append(created)
+            categories[current_category]['y'].append(1)
+
+
+def fill_nulls(categories, year_min, year_max):
+    for category in categories.keys():
+        for year in range(year_min, year_max + 1):
+            for month in range(1, 13):
+                if date_generator(month, year) not in categories[category]['x']:
+                    categories[category]['x'].append(
+                        date_generator(month, year))
+                    categories[category]['y'].append(0)
+    return categories
+
+
+def populate_categories():
     res = requests.get('https://api.bubengogh.com/pictures').json()
 
     categories = {'all': {'x': [], 'y': []}}
@@ -15,45 +49,30 @@ if __name__ == '__main__':
     year_min = np.inf
     year_max = -np.inf
 
-    def date_generator(month, year):
-        return matplotlib.dates.date2num(datetime.strptime(f'{month}/{year}', '%m/%Y').date())
-
     for pic in res:
 
-        try:
-            month, year = pic['created'].split("-")
-            created = False
+        if not pic['created']:
+            break
 
-            if month != '0' and year != '0':
-                created = date_generator(month, year)
-                if year_min > int(year):
-                    year_min = int(year)
-                elif year_max < int(year):
-                    year_max = int(year)
+        month, year = pic['created'].split("-")
+        created = False
 
-            current_category = pic['category']
+        if month != '0' and year != '0':
+            created = date_generator(month, year)
+            if year_min > int(year):
+                year_min = int(year)
+            elif year_max < int(year):
+                year_max = int(year)
 
-            if created:
-                if created in categories['all']['x']:
-                    categories['all']['y'][categories['all']
-                                           ['x'].index(created)] += 1
-                else:
-                    categories['all']['x'].append(created)
-                    categories['all']['y'].append(1)
+        if created:
+            insert_created(created, categories, pic['category'])
 
-                if current_category not in categories:
-                    categories[current_category] = {'x': [created], 'y': [1]}
-                else:
-                    if created in categories[current_category]['x']:
-                        categories[current_category]['y'][categories[current_category]['x'].index(
-                            created)] += 1
-                    else:
-                        categories[current_category]['x'].append(created)
-                        categories[current_category]['y'].append(1)
+    categories = fill_nulls(categories, year_min, year_max)
 
-        except ValueError:
-            continue
+    return categories, year_min, year_max
 
+
+def populate_yearly_categories(categories, year_min, year_max):
     yearly_categories = {_: {'x': [], 'y': []} for _ in categories.keys()}
 
     for category in yearly_categories.keys():
@@ -66,14 +85,10 @@ if __name__ == '__main__':
             yearly_categories[category]['y'][yearly_categories[category]['x'].index(matplotlib.dates.num2date(
                 data['x'][i]).year)] += data['y'][i]
 
-    for category in categories.keys():
-        for year in range(year_min, year_max + 1):
-            for month in range(1, 13):
-                if date_generator(month, year) not in categories[category]['x']:
-                    categories[category]['x'].append(
-                        date_generator(month, year))
-                    categories[category]['y'].append(0)
+    return yearly_categories
 
+
+def monthly_plot_setup(categories, year_min, year_max):
     fig, ax = plt.subplots()
     ax.xaxis.set_ticks([date_generator(1, _)
                        for _ in range(year_min, year_max + 1)])
@@ -94,21 +109,32 @@ if __name__ == '__main__':
             power_smooth = spl(lin)
 
             plt.plot(lin, power_smooth, label=category)
+    return fig
 
-    fig.set_size_inches(16, 4)
-    plt.xlabel("year")
-    plt.ylabel("works count")
-    plt.legend()
-    fig.savefig('artplot.png')
-    plt.close()
 
+def yearly_plot_setup(yearly_categories):
     fig, _ = plt.subplots()
     for category, data in yearly_categories.items():
         plt.plot(data['x'], data['y'], label=category)
+    return fig
 
-    fig.set_size_inches(8, 4)
+
+def plotter(dims, pic_name, fig):
+    fig.set_size_inches(dims[0], dims[1])
     plt.xlabel("year")
     plt.ylabel("works count")
     plt.legend()
-    fig.savefig('artplot-yearly.png')
+    fig.savefig(pic_name)
     plt.close()
+
+
+if __name__ == '__main__':
+    categories, year_min, year_max = populate_categories()
+
+    yearly_categories = populate_yearly_categories(
+        categories, year_min, year_max)
+
+    plotter([16, 4], 'artplot.png', monthly_plot_setup(
+        categories, year_min, year_max))
+
+    plotter([8, 4], 'artplot-yearly.png', yearly_plot_setup(yearly_categories))

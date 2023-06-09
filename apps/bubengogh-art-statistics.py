@@ -4,7 +4,6 @@ from datetime import datetime
 from scipy.interpolate import make_interp_spline
 import matplotlib
 import matplotlib.pyplot as plt
-from matplotlib.ticker import FuncFormatter
 
 
 def date_generator(month, year):
@@ -92,7 +91,7 @@ def monthly_plot_setup(categories, year_min, year_max):
     fig, ax = plt.subplots()
     ax.xaxis.set_ticks([date_generator(1, _)
                        for _ in range(year_min, year_max + 1)])
-    ax.xaxis.set_major_formatter(FuncFormatter(
+    ax.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(
         lambda x, _: matplotlib.dates.num2date(x).year))
 
     degree = 3

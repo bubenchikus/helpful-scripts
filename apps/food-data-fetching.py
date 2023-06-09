@@ -31,9 +31,21 @@ def trim_useless_fields(product):
         if key == 'foodNutrients':
             trimmed_product[key] = {}
             for nutrient in product[key]:
-                if nutrient['name'] in ['Carbohydrate, by difference', 'Protein', 'Total lipid (fat)', 'Energy', 'Energy (Atwater General Factors)', 'Energy (Atwater Specific Factors)',  'Fiber, total dietary']:
+                if nutrient['name'] in ['Carbohydrate, by difference',
+                                        'Protein',
+                                        'Total lipid (fat)',
+                                        'Energy (Atwater General Factors)',
+                                        'Energy (Atwater Specific Factors)',
+                                        'Fiber, total dietary']:
                     trimmed_product[key][nutrient['name']
                                          ] = nutrient['amount']
+                elif nutrient['name'] == 'Energy':
+                    if nutrient['unitName'] == 'kJ':
+                        trimmed_product[key][nutrient['name']
+                                             ] = round(nutrient['amount'] * 0.239006, 2)
+                    else:
+                        trimmed_product[key][nutrient['name']
+                                             ] = nutrient['amount']
         elif key in ['description', 'dataType']:
             trimmed_product[key] = product[key]
 
@@ -45,6 +57,55 @@ def trim_useless_fields(product):
     return trimmed_product
 
 
+def insert_proportions(product):
+    product['foodNutrients']['proportions'] = {}
+    product['foodNutrients']['proportions']['byWeight'] = {}
+    product['foodNutrients']['proportions']['byCalories'] = {}
+
+    carb = protein = fat = fiber = calories = 0
+
+    if 'Carbohydrate, by difference' in product['foodNutrients']:
+        carb = product['foodNutrients']['Carbohydrate, by difference']
+    if 'Protein' in product['foodNutrients']:
+        protein = product['foodNutrients']['Protein']
+    if 'Total lipid (fat)' in product['foodNutrients']:
+        fat = product['foodNutrients']['Total lipid (fat)']
+    if 'Fiber, total dietary' in product['foodNutrients']:
+        fiber = product['foodNutrients']['Fiber, total dietary']
+    if 'Energy (Atwater Specific Factors)' in product['foodNutrients']:
+        calories = product['foodNutrients']['Energy (Atwater Specific Factors)']
+    elif 'Energy (Atwater General Factors)' in product['foodNutrients']:
+        calories = product['foodNutrients']['Energy (Atwater General Factors)']
+    elif 'Energy' in product['foodNutrients']:
+        calories = product['foodNutrients']['Energy']
+
+    weight = carb + protein + fat
+
+    if weight > 0:
+        product['foodNutrients']['proportions']['byWeight']['protein'] = round(
+            protein / weight * 100, 2)
+        product['foodNutrients']['proportions']['byWeight']['fat'] = round(
+            fat / weight * 100, 2)
+        product['foodNutrients']['proportions']['byWeight']['fiber'] = round(
+            fiber / weight * 100, 2)
+        product['foodNutrients']['proportions']['byWeight']['carb'] = round(100 -
+                                                                            product['foodNutrients']['proportions']['byWeight']['protein'] -
+                                                                            product['foodNutrients']['proportions']['byWeight']['fat'], 2)
+
+    if calories > 0:
+        product['foodNutrients']['proportions']['byCalories']['protein'] = round(
+            protein * 4 / calories * 100, 2)
+        product['foodNutrients']['proportions']['byCalories']['fat'] = round(
+            fat * 9 / calories * 100, 2)
+        product['foodNutrients']['proportions']['byCalories']['fiber'] = round(
+            fiber * 2 / calories * 100, 2)
+        product['foodNutrients']['proportions']['byCalories']['carb'] = round(
+            100 - product['foodNutrients']['proportions']['byCalories']['protein'] -
+            product['foodNutrients']['proportions']['byCalories']['fat'], 2)
+
+    return product
+
+
 def get_all_data_by_type(type, collection):
     print(f"----Getting {type} data...----")
     current_page = 1
@@ -54,7 +115,7 @@ def get_all_data_by_type(type, collection):
         if not res or len(res) < 1:
             break
         for product in res:
-            product = trim_useless_fields(product)
+            product = insert_proportions(trim_useless_fields(product))
             if len(product['foodNutrients']) > 0:
                 collection.insert_one(product)
 

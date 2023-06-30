@@ -6,8 +6,8 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 
-def date_generator(month, year):
-    return matplotlib.dates.date2num(datetime.strptime(f'{month}/{year}', '%m/%Y').date())
+def date_generator(year, month):
+    return matplotlib.dates.date2num(datetime.strptime(f'{year}/{month}', '%Y/%m').date())
 
 
 def insert_created(created, categories, current_category):
@@ -33,9 +33,9 @@ def fill_nulls(categories, year_min, year_max):
     for category in categories.keys():
         for year in range(year_min, year_max + 1):
             for month in range(1, 13):
-                if date_generator(month, year) not in categories[category]['x']:
+                if date_generator(year, month) not in categories[category]['x']:
                     categories[category]['x'].append(
-                        date_generator(month, year))
+                        date_generator(year, month))
                     categories[category]['y'].append(0)
     return categories
 
@@ -53,11 +53,11 @@ def populate_categories():
         if not pic['created']:
             break
 
-        month, year = pic['created'].split("-")
+        year, month = pic['created'].split("-")
         created = False
 
-        if month != '0' and year != '0':
-            created = date_generator(month, year)
+        if year != '0' and month != '0':
+            created = date_generator(year, month)
             if year_min > int(year):
                 year_min = int(year)
             elif year_max < int(year):
@@ -89,7 +89,7 @@ def populate_yearly_categories(categories, year_min, year_max):
 
 def monthly_plot_setup(categories, year_min, year_max):
     fig, ax = plt.subplots()
-    ax.xaxis.set_ticks([date_generator(1, _)
+    ax.xaxis.set_ticks([date_generator(_, 1)
                        for _ in range(year_min, year_max + 1)])
     ax.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(
         lambda x, _: matplotlib.dates.num2date(x).year))

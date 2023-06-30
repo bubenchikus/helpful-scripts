@@ -88,9 +88,10 @@ def insert_proportions(product):
             fat / weight * 100, 2)
         product['foodNutrients']['proportions']['byWeight']['fiber'] = round(
             fiber / weight * 100, 2)
-        product['foodNutrients']['proportions']['byWeight']['carb'] = round(100 -
-                                                                            product['foodNutrients']['proportions']['byWeight']['protein'] -
-                                                                            product['foodNutrients']['proportions']['byWeight']['fat'], 2)
+        # abs() to avoid -0 value occurance
+        product['foodNutrients']['proportions']['byWeight']['carb'] = abs(round(100 -
+                                                                                product['foodNutrients']['proportions']['byWeight']['protein'] -
+                                                                                product['foodNutrients']['proportions']['byWeight']['fat'], 2))
 
     if calories > 0:
         product['foodNutrients']['proportions']['byCalories']['protein'] = round(
@@ -99,9 +100,9 @@ def insert_proportions(product):
             fat * 9 / calories * 100, 2)
         product['foodNutrients']['proportions']['byCalories']['fiber'] = round(
             fiber * 2 / calories * 100, 2)
-        product['foodNutrients']['proportions']['byCalories']['carb'] = round(
+        product['foodNutrients']['proportions']['byCalories']['carb'] = abs(round(
             100 - product['foodNutrients']['proportions']['byCalories']['protein'] -
-            product['foodNutrients']['proportions']['byCalories']['fat'], 2)
+            product['foodNutrients']['proportions']['byCalories']['fat'], 2))
 
     return product
 

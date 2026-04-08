@@ -42,7 +42,7 @@ if __name__ == '__main__':
     else:
         if os.path.isdir(args["image_directory"]):
             files = [file for file in os.listdir(args["image_directory"]) if re.match(
-                ".*\.(?:jpg|jpeg|png|webp)", file)]
+                r".*\.(?:jpg|jpeg|png|webp|JPG|JPEG|PNG|WEBP)", file)]
 
             for file in files:
                 converter(os.path.join(args["image_directory"], file),
